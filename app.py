@@ -7,8 +7,10 @@ import plotly.express as px
 # Load data
 df = pd.read_csv('Social Media Users.csv')
 platforms = sorted(df['Platform'].dropna().unique())  # Correct platform list
-country_list = df['Country'].unique().tolist()
+country_list = df['Country'].sort_values(ascending=True).unique().tolist()
 df['Date Joined'] = pd.to_datetime(df['Date Joined'])
+st.set_page_config(page_title='Social Media User Analysis', layout="wide")
+
 
 # Platform analysis function
 def platform_analysis(selected_platform):
@@ -68,8 +70,51 @@ def platform_analysis(selected_platform):
     # Streamlit render
     st.pyplot(fig)
 
+def country_analysis(selected_Country):
+    country = df[df['Country'] == selected_Country].groupby(['Country','Platform']).agg({
+        'Daily Time Spent (min)': 'mean'
+    })
+
+    st.subheader('Country Average Time Spend On Platform')
+    st.dataframe(country)
+    # we count country_popularity and display
+
+    st.subheader(f'Platform Popularity in {selected_Country}')
+
+    # Count platform popularity in the selected country
+    country_popularity = df[df['Country'] == selected_Country]['Platform'].value_counts()
+
+    # Create pie chart
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.pie(country_popularity, labels=country_popularity.index, autopct='%1.1f%%', startangle=90)
+    ax.set_title(f'Platform Popularity in {selected_Country}')
+    ax.axis('equal')  # Equal aspect ratio ensures the pie is a circle
+
+    st.pyplot(fig)
+    st.subheader('Verification Rate in {}'.format(selected_Country))
+
+    # Count how many verified/unverified users in India
+    verify_counts = df[df['Country'] == selected_Country]['Verified Account'].value_counts()
+
+    # Colors for verified/unverified
+    colors = ['#4CAF50', '#FFC107']  # green and amber
+
+    # Create pie chart
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.pie(
+        verify_counts,
+        labels=verify_counts.index,
+        autopct='%1.1f%%',
+        startangle=90,
+        colors=colors,
+        textprops={'fontsize': 10}
+    )
+    ax.set_title('Verification Rate ', fontsize=14, fontweight='bold')
+    ax.axis('equal')  # Keep the pie chart circular
+
+    st.pyplot(fig)
 # Streamlit app setup
-st.set_page_config(page_title='Social Media User Analysis', layout="wide")
+
 st.title('Social Media User Analysis')
 
 option = st.sidebar.selectbox('Select an option', ['Platform', 'Country', 'Primary Usage', 'Daily Time Spent'])
@@ -78,10 +123,10 @@ if option == 'Platform':
     selected_platform = st.selectbox('Select a Platform', platforms)
     # Immediately run the function on selection (no button needed)
     platform_analysis(selected_platform)
-
 elif option == 'Country':
-    st.info("Country analysis is under development.")
-
+    selected_Country = st.selectbox('Select a Country', country_list)
+    #run function to display data (we pass selected countery to fun)
+    country_analysis(selected_Country)
 elif option == 'Primary Usage':
     st.info("Primary usage analysis is under development.")
 else:
